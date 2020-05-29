@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 			}
 			if (code_type == "des_text_cipher") { 
 				des_text_cipher des_text;
-				plaintext = des_text.dwDES(ciphertext, "0001001100110100010101110111100110011011101111001101111111110001");
+				plaintext = des_text.dwIDES(ciphertext, "0001001100110100010101110111100110011011101111001101111111110001");
 			}
 			if (code_type == "play_fair") { 
 				play_fair pf;

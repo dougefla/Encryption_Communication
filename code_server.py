@@ -39,20 +39,28 @@ html = '''
     <br>
         <h3>By @Douge, ZJU</h3>
     </br>
-    </body>
-    </html>
 
     '''
 app = Flask(__name__)
+result_json = '/var/www/code_server/decryption/result.json'
+ciphertext_json = '/var/www/code_server/decryption/ciphertext.json'
+show_file = '/var/www/code_server/show'
 
 @app.route('/upload', methods=['POST'])
 def server():
+
     logging.debug('Server run!')
     now = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime())
     logging.debug(now)
+    # 只接受POST类型的请求
     if request.method == 'POST':
         logging.debug('POST!')
+        logging.debug(request.data)
+
         content = eval(request.data)
+        logging.debug(content)
+        logging.debug(type(content))
+        # 校验密文上行报合法性
         try:
             ciphertext = content['ciphertext']
         except:
@@ -61,46 +69,49 @@ def server():
             logging.debug(request.data)
             s = ''
             return s
-        with open('/var/www/code_server/ciphertext.json','w+',encoding='utf-8') as f:
-            logging.debug('open ciphertext!!')
+        # 写入密文存储报
+        with open(ciphertext_json,'w+',encoding='utf-8') as f:
+            logging.debug('Open ciphertext.json')
             json.dump(content,f,ensure_ascii=False)
         # 等待解密程序处理
         time.sleep(1)
         while 1:
+
             logging.debug("Waiting for Decode")
-            if not os.path.exists('/var/www/code_server/plaintext.json'):
-                logging.debug('plaintext not exist, create!')
-                with open("/var/www/code_server/plaintext.json",'w',encoding='utf-8') as f:
-                    i=1
-            if not os.path.getsize('/var/www/code_server/plaintext.json') ==0:
-                logging.debug('plaintext not empty, read!')
-                with open('/var/www/code_server/plaintext.json','r+',encoding='utf-8') as f:
+            # 检验result文件是否存在，不存在就新建一个
+            if not os.path.exists(result_json):
+                logging.debug('result not exist, create!')
+                with open(result_json,'w',encoding='utf-8') as f:
+                    print("Create File: result_json")
+            # 检验是否非空，如果非空就读入
+            if not os.path.getsize(result_json) ==0:
+                logging.debug('result not empty, read!')
+                with open(result_json,'r+',encoding='utf-8') as f:
                     logging.debug('load plaintext!')
-                    content = eval(json.load(f))
-                    with open('/var/www/code_server/result.json','w+',encoding='utf-8') as f2:
-                        logging.debug('write in result!:')
+                    content = json.load(f)
+                    with open(show_file,'w+',encoding='utf-8') as f2:
+                        logging.debug('write in show!:')
                         logging.debug(content.get('plaintext'))
                         f2.write(content['plaintext'])
                     f.seek(0)
                     f.truncate()
                     logging.debug("Done!")
-                return html+content.get('plaintext')
+                return html+content['plaintext']
             time.sleep(1)
-    return html
+    return html + '</body></html>'
 
 @app.route('/', methods=['GET'])
 def index():
     app.logger.info('index run!')
-    if not os.path.exists('result.json'):
-        with open("/var/www/code_server/result.json",'w',encoding='utf-8') as f:
+    if not os.path.exists(show_file):
+        with open(show_file,'w',encoding='utf-8') as f:
             i=1
-    with open('/var/www/code_server/result.json','a',encoding='utf-8') as f:
-        f.seek(0,0)
-        if os.path.getsize('/var/www/code_server/result.json') ==0:
+    with open(show_file,'r',encoding='utf-8') as f:
+        if os.path.getsize(show_file) ==0:
             plaintext = ''
         else:
             plaintext = f.readline()
-    return html+'<br>'+plaintext+'</br>'
+    return html+'<br>'+plaintext+'</br>' + '</body></html>'
 
 if __name__ == '__main__':
     app.run()
